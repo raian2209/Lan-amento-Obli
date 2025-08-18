@@ -8,11 +8,13 @@ const fireButton = document.getElementById('fireButton');
 const resetButton = document.getElementById('resetButton');
 const angleDisplay = document.getElementById('angleDisplay');
 const distanceDisplay = document.getElementById('distanceDisplay');
+const targetCoordsDisplay = document.getElementById('targetCoordsDisplay');
 const messageDisplay = document.getElementById('messageDisplay');
+
 
 // Constantes Físicas e do Jogo
 const GRAVITY = 9.8;
-const PIXELS_PER_METER = 10;
+const PIXELS_PER_METER = 10; // 10 pixels = 1 metro
 
 // Variáveis de Estado do Jogo
 let gameState = 'ready';
@@ -24,7 +26,7 @@ let animationFrameId = null;
 let lastTime = 0;
 let trajectoryPath = [];
 
-// --- FUNÇÕES DE DESENHO ---
+// --- FUNÇÕES DE DESENHO (Sem alterações aqui) ---
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -109,8 +111,6 @@ function drawTrajectory() {
         ctx.lineTo(point.x, point.y);
     }
     ctx.stroke();
-    // CORREÇÃO APLICADA AQUI:
-    // A função precisa de um array vazio para resetar para uma linha sólida.
     ctx.setLineDash([]);
 }
 
@@ -196,6 +196,20 @@ function resetGame() {
     angleDisplay.textContent = (cannon.angle * 180 / Math.PI).toFixed(1);
     const distance = Math.sqrt(Math.pow(target.x - cannon.x, 2) + Math.pow(target.y - cannon.y, 2)) / PIXELS_PER_METER;
     distanceDisplay.textContent = distance.toFixed(1);
+
+    // --- ALTERAÇÃO PRINCIPAL AQUI ---
+    // Calcula a diferença de posição em pixels
+    const deltaX_pixels = target.x - cannon.x;
+    // O eixo Y é invertido no canvas, por isso a subtração é cannon.y - target.y
+    const deltaY_pixels = cannon.y - target.y;
+
+    // Converte a diferença de pixels para metros
+    const targetX_meters = deltaX_pixels / PIXELS_PER_METER;
+    const targetY_meters = deltaY_pixels / PIXELS_PER_METER;
+
+    // Exibe as coordenadas em metros na UI
+    targetCoordsDisplay.textContent = `x: ${targetX_meters.toFixed(1)}m, y: ${targetY_meters.toFixed(1)}m`;
+
     draw();
 }
 
