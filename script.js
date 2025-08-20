@@ -6,40 +6,37 @@ const ctx = canvas.getContext('2d');
 const velocityInput = document.getElementById('velocityInput');
 const fireButton = document.getElementById('fireButton');
 const resetButton = document.getElementById('resetButton');
-const angleDisplay = document.getElementById('angleDisplay');
-const distanceDisplay = document.getElementById('distanceDisplay');
 const targetCoordsDisplay = document.getElementById('targetCoordsDisplay');
 const messageDisplay = document.getElementById('messageDisplay');
 
+// Selecionando os novos controles do ângulo
+const angleSlider = document.getElementById('angleSlider');
+const angleValueDisplay = document.getElementById('angleValueDisplay');
 
 // Constantes Físicas e do Jogo
 const GRAVITY = 9.8;
-const PIXELS_PER_METER = 10; // 10 pixels = 1 metro
-
-// NOVO: Constante para controlar o tamanho dos vetores de velocidade
-const VECTOR_SCALE = 0.3; // Ajuste este valor para mudar o tamanho dos vetores
-
+const PIXELS_PER_METER = 15;
+const VECTOR_SCALE = 0.25;
 
 // Variáveis de Estado do Jogo
 let gameState = 'ready';
 let projectile = {};
 let target = {};
-let cannon = {};
+let cannon = {}; // Começa como um objeto vazio
 let timeInFlight = 0;
 let animationFrameId = null;
 let lastTime = 0;
 let trajectoryPath = [];
-
-// --- NOVAS VARIÁVEIS PARA A TELEMETRIA DE VELOCIDADE ---
-const PLOT_INTERVAL = 0.5; // Intervalo em segundos para plotar os dados
+const PLOT_INTERVAL = 0.4;
 let timeSinceLastPlot = 0;
-let velocityDataPoints = []; // Array para armazenar os dados {x, y, vx, vy}
+let velocityDataPoints = [];
 
-
-
-// --- FUNÇÕES DE DESENHO (Sem alterações aqui) ---
+// --- FUNÇÕES DE DESENHO ---
 
 function draw() {
+    // Guarda de segurança: não tenta desenhar se os objetos principais não estiverem prontos
+    if (!ctx || !cannon || !target) return;
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
     drawGround();
@@ -48,17 +45,11 @@ function draw() {
     drawTarget();
     if (['firing', 'hit', 'miss'].includes(gameState)) {
         drawProjectile();
-        //drawVelocityVectors(); // Desenha os vetores de velocidade
     }
-
-
-    drawVelocityComponentVectors(); // Desenha os vetores de componentes vx e vy
-
-    drawVelocityData(); // Desenha os dados de velocidade por cima de tudo
-
+    drawVelocityComponentVectors();
+    drawVelocityData();
     drawUI();
 }
-
 function drawBackground() {
     const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
     sky.addColorStop(0, '#87CEEB');
@@ -66,7 +57,6 @@ function drawBackground() {
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
-
 function drawGround() {
     ctx.fillStyle = '#228B22';
     ctx.fillRect(0, canvas.height - 70, canvas.width, 70);
@@ -75,7 +65,6 @@ function drawGround() {
         ctx.fillRect(i, canvas.height - 70, 10, 5);
     }
 }
-
 function drawCannon() {
     ctx.save();
     ctx.translate(cannon.x, cannon.y);
@@ -95,7 +84,6 @@ function drawCannon() {
     ctx.arc(cannon.x + 20, cannon.y + 35, 15, 0, 2 * Math.PI);
     ctx.fill();
 }
-
 function drawTarget() {
     ctx.fillStyle = 'white';
     ctx.beginPath();
@@ -110,7 +98,6 @@ function drawTarget() {
     ctx.arc(target.x, target.y, target.radius * 0.33, 0, 2 * Math.PI);
     ctx.fill();
 }
-
 function drawProjectile() {
     if (!projectile.x) return;
     ctx.fillStyle = 'black';
@@ -118,7 +105,6 @@ function drawProjectile() {
     ctx.arc(projectile.x, projectile.y, 8, 0, 2 * Math.PI);
     ctx.fill();
 }
-
 function drawTrajectory() {
     if (trajectoryPath.length < 2) return;
     ctx.beginPath();
@@ -132,73 +118,26 @@ function drawTrajectory() {
     ctx.setLineDash([]);
 }
 
-function drawVelocityVectors() {
- ctx.strokeStyle = 'red'; // Cor dos vetores de velocidade
- ctx.lineWidth = 2;
+// DENTRO DE script.js
 
- for (const dataPoint of velocityDataPoints) {
- ctx.beginPath();
- // Ponto inicial do vetor: o centro do projétil no ponto de dados
- ctx.moveTo(dataPoint.x, dataPoint.y);
+// NOVA FUNÇÃO AUXILIAR para desenhar a ponta da seta de um vetor
+function drawArrowhead(ctx, x, y, angle) {
+    const headLength = 8; // Comprimento da ponta da seta
 
- // Calcula o ponto final do vetor com base na velocidade e na escala
- const endX = dataPoint.x + dataPoint.vx * VECTOR_SCALE * PIXELS_PER_METER;
- const endY = dataPoint.y - dataPoint.vy * VECTOR_SCALE * PIXELS_PER_METER; // Subtrai vy porque o eixo Y do canvas é invertido
+    ctx.save(); // Salva o estado atual do canvas (cor, rotação, etc.)
+    ctx.translate(x, y); // Move a origem do canvas para a ponta do vetor
+    ctx.rotate(angle); // Rotaciona o canvas para o ângulo do vetor
 
- ctx.lineTo(endX, endY);
- ctx.stroke();
- }
+    // Desenha as duas linhas que formam a ponta da seta
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-headLength, -headLength / 2);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-headLength, headLength / 2);
+    ctx.stroke();
+
+    ctx.restore(); // Restaura o estado original do canvas
 }
-
-// NOVA FUNÇÃO DE DESENHO - Agora desenha as componentes separadamente
-
-function drawVelocityComponentVectors() {
-    if (!velocityDataPoints.length) return;
-
-    // Itera sobre cada ponto de dado que capturamos
-    for (const dataPoint of velocityDataPoints) {
-        const startX = dataPoint.x;
-        const startY = dataPoint.y;
-
-        // --- Desenha o vetor da componente X (Horizontal) ---
-        ctx.beginPath();
-        ctx.strokeStyle = 'blue'; // Cor para o vetor vx
-        ctx.lineWidth = 2;
-        ctx.moveTo(startX, startY);
-        // O ponto final é a posição inicial + a velocidade horizontal (escalada)
-        const endX = startX + (dataPoint.vx * VECTOR_SCALE * PIXELS_PER_METER);
-        ctx.lineTo(endX, startY); // A coordenada Y não muda para um vetor horizontal
-        ctx.stroke();
-
-        // --- Desenha o vetor da componente Y (Vertical) ---
-        ctx.beginPath();
-        ctx.strokeStyle = 'green'; // Cor para o vetor vy
-        ctx.lineWidth = 2;
-        ctx.moveTo(startX, startY);
-        // O ponto final é a posição inicial - a velocidade vertical (escalada)
-        // Usamos SUBTRAÇÃO porque o eixo Y do canvas cresce para baixo
-        const endY = startY - (dataPoint.vy * VECTOR_SCALE * PIXELS_PER_METER);
-        ctx.lineTo(startX, endY); // A coordenada X não muda para um vetor vertical
-        ctx.stroke();
-    }
-}
-
-// NOVA FUNÇÃO DE DESENHO
-
-function drawVelocityData() {
-    ctx.font = '12px Arial';
-    ctx.fillStyle = '#333333'; // Cor escura para boa legibilidade
-    ctx.textAlign = 'left';
-
-    // Itera sobre cada ponto de dado que capturamos
-    for (const dataPoint of velocityDataPoints) {
-        const text = `vx: ${dataPoint.vx.toFixed(1)}\n vy: ${dataPoint.vy.toFixed(1)}`;
-        
-        // Desenha o texto um pouco acima do ponto de captura para não sobrepor a trajetória
-        ctx.fillText(text, dataPoint.x, dataPoint.y - 10);
-    }
-}
-
 
 function drawUI() {
     if (gameState === 'hit') {
@@ -210,38 +149,109 @@ function drawUI() {
     }
 }
 
+// function drawVelocityData() {
+//     ctx.font = '12px Arial';
+//     ctx.fillStyle = '#333333';
+//     ctx.textAlign = 'left';
+//     for (const dataPoint of velocityDataPoints) {
+//         const text = `vy: ${dataPoint.vy.toFixed(1)} (m/s), vx: ${dataPoint.vx.toFixed(1)} (m/s)`;
+//         ctx.fillText(text, dataPoint.x, dataPoint.y - 10);
+//     }
+// }
+
+// SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
+function drawVelocityData() {
+    ctx.font = '12px Arial';
+    ctx.fillStyle = '#333333'; // Cor escura para boa legibilidade
+    ctx.textAlign = 'left';
+    const lineHeight = 14; // Define o espaçamento vertical entre as linhas de texto
+
+    for (const dataPoint of velocityDataPoints) {
+        // Cria strings de texto separadas
+        const textVx = `vₓ: ${dataPoint.vx.toFixed(1)}`;
+        const textVy = `vᵧ: ${dataPoint.vy.toFixed(1)}`;
+
+        // Define a posição Y para a primeira linha (vx)
+        const yPosVx = dataPoint.y - 22; // Um pouco mais para cima para dar espaço
+
+        
+        
+        // 1. Desenha o texto de vx
+        ctx.fillText(textVx, dataPoint.x, yPosVx + lineHeight);
+
+        // 2. Desenha o texto de vy, abaixo da primeira linha
+        ctx.fillText(textVy, dataPoint.x, yPosVx);
+        
+    }
+}
+
+
+function drawVelocityComponentVectors() {
+    if (!velocityDataPoints.length) return;
+    for (const dataPoint of velocityDataPoints) {
+        const startX = dataPoint.x;
+        const startY = dataPoint.y;
+        ctx.beginPath();
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.moveTo(startX, startY);
+        const endX = startX + (dataPoint.vx * VECTOR_SCALE * PIXELS_PER_METER);
+        ctx.lineTo(endX, startY);
+        ctx.stroke();
+        // Adiciona a seta na ponta do vetor vx
+        const angleX = dataPoint.vx >= 0 ? 0 : Math.PI; // 0 rad para direita, PI rad para esquerda
+        drawArrowhead(ctx, endX, startY, angleX);
+        
+        ctx.beginPath();
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 2;
+        ctx.moveTo(startX, startY);
+        const endY = startY - (dataPoint.vy * VECTOR_SCALE * PIXELS_PER_METER);
+        ctx.lineTo(startX, endY);
+        ctx.stroke();
+        // Adiciona a seta na ponta do vetor vy
+        const angleY = dataPoint.vy >= 0 ? -Math.PI / 2 : Math.PI / 2; // -90° para cima, 90° para baixo
+        drawArrowhead(ctx, startX, endY, angleY);
+    }
+}
+
+// Função para atualizar o ângulo, focada apenas nas MUDANÇAS do usuário
+function updateAngle() {
+    const angleInDegrees = parseFloat(angleSlider.value);
+    angleValueDisplay.textContent = angleInDegrees.toFixed(1);
+    if (cannon) {
+        cannon.angle = angleInDegrees * (Math.PI / 180);
+    }
+    // Redesenha apenas se o jogo não estiver no meio de um disparo
+    if (gameState !== 'firing') {
+        draw();
+    }
+}
+
 // --- FUNÇÕES DE LÓGICA DO JOGO ---
 
 function update(deltaTime) {
     if (gameState !== 'firing' || !deltaTime) return;
     timeInFlight += deltaTime;
     timeSinceLastPlot += deltaTime;
-    
     if (timeSinceLastPlot >= PLOT_INTERVAL) {
-        // Calcula a componente vy atual (vx é constante)
-        const currentVy = projectile.vy + (GRAVITY * timeInFlight);
-
-        // Armazena os dados atuais no nosso array
+        const simulationVy = projectile.vy + (GRAVITY * timeInFlight);
         velocityDataPoints.push({
-            x: projectile.x,       // Posição atual do projétil no canvas
+            x: projectile.x,
             y: projectile.y,
-            vx: projectile.vx,     // A velocidade em m/s
-            vy: -currentVy          // A velocidade em m/s
+            vx: projectile.vx,
+            vy: -simulationVy
         });
-
-        // Reseta o cronômetro
         timeSinceLastPlot = 0;
     }
-
     const initialX = cannon.x + 80 * Math.cos(cannon.angle);
     projectile.x = initialX + (projectile.vx * timeInFlight * PIXELS_PER_METER);
     const initialY = cannon.y - 80 * Math.sin(cannon.angle);
-    projectile.y = initialY + (projectile.vy * timeInFlight * PIXELS_PER_METER) + (0.5 * GRAVITY * Math.pow(timeInFlight, 2) * PIXELS_PER_METER);
+    projectile.y = initialY + (projectile.vy * timeInFlight * PIXELS_PER_METER) + (0.5 * Math.pow(timeInFlight, 2) * GRAVITY * PIXELS_PER_METER);
     trajectoryPath.push({ x: projectile.x, y: projectile.y });
     checkCollision();
     checkBoundaries();
 }
-
 function checkCollision() {
     if (gameState !== 'firing') return;
     const distance = Math.sqrt(Math.pow(projectile.x - target.x, 2) + Math.pow(projectile.y - target.y, 2));
@@ -250,7 +260,6 @@ function checkCollision() {
         fireButton.disabled = false;
     }
 }
-
 function checkBoundaries() {
     if (gameState !== 'firing') return;
     if (projectile.x > canvas.width || projectile.x < 0 || projectile.y > canvas.height - 70) {
@@ -258,7 +267,6 @@ function checkBoundaries() {
         fireButton.disabled = false;
     }
 }
-
 function fireShot() {
     if (!['ready', 'hit', 'miss'].includes(gameState)) return;
     const velocity = parseFloat(velocityInput.value);
@@ -267,8 +275,8 @@ function fireShot() {
         return;
     }
     trajectoryPath = [];
-    velocityDataPoints = []; 
-    timeSinceLastPlot = 0; // Reseta o cronômetro também
+    velocityDataPoints = [];
+    timeSinceLastPlot = 0;
     projectile = {
         x: cannon.x + 80 * Math.cos(cannon.angle),
         y: cannon.y - 80 * Math.sin(cannon.angle),
@@ -281,59 +289,64 @@ function fireShot() {
     messageDisplay.textContent = '';
 }
 
+// CORRIGIDO: Função de reset agora cria o canhão com um ângulo válido desde o início
 function resetGame() {
     gameState = 'ready';
+
+    // Lê o valor do slider e define o estado inicial do canhão
+    const angleInDegrees = parseFloat(angleSlider.value);
+    angleValueDisplay.textContent = angleInDegrees.toFixed(1);
+
     cannon = {
         x: 50,
         y: canvas.height - 70,
-        angle: (Math.random() * 60 + 15) * (Math.PI / 180)
+        angle: angleInDegrees * (Math.PI / 180)
     };
+    
     target = {
         x: Math.floor(Math.random() * (canvas.width / 2 - 50)) + canvas.width / 2,
         y: canvas.height - 70 - (Math.random() * 200 + 50),
         radius: 20
     };
+    
     projectile = {};
     timeInFlight = 0;
     trajectoryPath = [];
-    velocityDataPoints = []; 
+    velocityDataPoints = [];
     fireButton.disabled = false;
     messageDisplay.textContent = '';
-    angleDisplay.textContent = (cannon.angle * 180 / Math.PI).toFixed(1);
-    const distance = Math.sqrt(Math.pow(target.x - cannon.x, 2) + Math.pow(target.y - cannon.y, 2)) / PIXELS_PER_METER;
-    distanceDisplay.textContent = distance.toFixed(1);
-
-    // --- ALTERAÇÃO PRINCIPAL AQUI ---
-    // Calcula a diferença de posição em pixels
+    
     const deltaX_pixels = target.x - cannon.x;
-    // O eixo Y é invertido no canvas, por isso a subtração é cannon.y - target.y
     const deltaY_pixels = cannon.y - target.y;
-
-    // Converte a diferença de pixels para metros
     const targetX_meters = deltaX_pixels / PIXELS_PER_METER;
     const targetY_meters = deltaY_pixels / PIXELS_PER_METER;
-
-    // Exibe as coordenadas em metros na UI
     targetCoordsDisplay.textContent = `x: ${targetX_meters.toFixed(1)}m, y: ${targetY_meters.toFixed(1)}m`;
 
+    // Desenha o estado inicial completo
     draw();
 }
 
 // --- GAME LOOP ---
-
 function gameLoop(timestamp) {
+    // Inicializa lastTime no primeiro frame para evitar um deltaTime gigante
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
+    
     update(deltaTime);
     draw();
+    
     animationFrameId = requestAnimationFrame(gameLoop);
 }
 
 // --- INICIALIZAÇÃO ---
-
 fireButton.addEventListener('click', fireShot);
 resetButton.addEventListener('click', resetGame);
+angleSlider.addEventListener('input', updateAngle);
 
 // Inicia o jogo
 resetGame();
-gameLoop(0);
+// Inicia o loop principal do jogo
+gameLoop();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo de Artilharia 3.0</title>
+    <title>Jogo de Artilharia</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,8 +15,10 @@
                 <input type="number" id="velocityInput" value="50" min="1" max="100">
             </div>
             <div class="info-group">
-                <p>Ângulo: <span id="angleDisplay">45.0</span>°</p>
-                <p>Alvo a: <span id="distanceDisplay">...</span> m</p>
+                <div class="angle-control">
+                    <label for="angleSlider">Ângulo: <span id="angleValueDisplay">45.0</span>°</label>
+                    <input type="range" id="angleSlider" min="15" max="75" value="45" step="0.5">
+                </div>
                 <p>Alvo (x, y): <span id="targetCoordsDisplay">...</span></p>
             </div>
             <button id="fireButton">Atirar</button>

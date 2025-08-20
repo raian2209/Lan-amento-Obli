@@ -89,3 +89,13 @@ button {
     font-size: 1.1em;
     min-height: 20px;
 }
+
+.angle-control {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#angleSlider {
+    width: 100%;
+}
