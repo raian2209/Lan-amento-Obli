@@ -99,3 +99,21 @@ button {
 #angleSlider {
     width: 100%;
 }
+
+/* Adicione no final de style.css */
+
+.input-with-unit {
+    display: flex;
+    align-items: center; /* Alinha o input e o texto verticalmente */
+    gap: 8px; /* Adiciona um espaço entre o input e o texto */
+}
+
+.input-with-unit input {
+    flex-grow: 1; /* Faz o input ocupar o espaço disponível */
+    width: 0; /* Necessário para o flex-grow funcionar corretamente em alguns navegadores */
+}
+
+.input-with-unit span {
+    color: #555; /* Cor do texto da unidade */
+    font-size: 0.9em;
+}
