@@ -33,6 +33,10 @@ let velocityDataPoints = [];
 
 // --- FUNÇÕES DE DESENHO ---
 
+// ADICIONE A LINHA ABAIXO
+const projectileCoordsDisplay = document.getElementById('projectileCoordsDisplay');
+
+
 function draw() {
     // Guarda de segurança: não tenta desenhar se os objetos principais não estiverem prontos
     if (!ctx || !cannon || !target) return;
@@ -251,6 +255,14 @@ function update(deltaTime) {
     projectile.x = initialX + (projectile.vx * timeInFlight * PIXELS_PER_METER);
     const initialY = cannon.y - 80 * Math.sin(cannon.angle);
     projectile.y = initialY + (projectile.vy * timeInFlight * PIXELS_PER_METER) + (0.5 * Math.pow(timeInFlight, 2) * GRAVITY * PIXELS_PER_METER);
+   
+   
+   // Converte a posição atual do projétil (em pixels) para metros relativos ao canhão
+    const projectileX_meters = (projectile.x - cannon.x) / PIXELS_PER_METER;
+    const projectileY_meters = (cannon.y - projectile.y) / PIXELS_PER_METER;
+    // Atualiza o texto no painel de controles
+    projectileCoordsDisplay.textContent = `x: ${projectileX_meters.toFixed(1)}m, y: ${projectileY_meters.toFixed(1)}m`;
+   
     trajectoryPath.push({ x: projectile.x, y: projectile.y });
     checkCollision();
     checkBoundaries();
@@ -280,6 +292,7 @@ function fireShot() {
     trajectoryPath = [];
     velocityDataPoints = [];
     timeSinceLastPlot = 0;
+    projectileCoordsDisplay.textContent = 'Em voo...';
     projectile = {
         x: cannon.x + 80 * Math.cos(cannon.angle),
         y: cannon.y - 80 * Math.sin(cannon.angle),
@@ -324,6 +337,8 @@ function resetGame() {
     const targetX_meters = deltaX_pixels / PIXELS_PER_METER;
     const targetY_meters = deltaY_pixels / PIXELS_PER_METER;
     targetCoordsDisplay.textContent = `x: ${targetX_meters.toFixed(1)}m, y: ${targetY_meters.toFixed(1)}m`;
+
+    projectileCoordsDisplay.textContent = 'Parado';
 
     // Desenha o estado inicial completo
     draw();
