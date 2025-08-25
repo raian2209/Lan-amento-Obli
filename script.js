@@ -36,6 +36,20 @@ let velocityDataPoints = [];
 // ADICIONE A LINHA ABAIXO
 const projectileCoordsDisplay = document.getElementById('projectileCoordsDisplay');
 
+// NOVO: Seletores para os botões de medição
+const measureHorizontalBtn = document.getElementById('measureHorizontalBtn');
+const measureVerticalBtn = document.getElementById('measureVerticalBtn');
+const clearMeasuresBtn = document.getElementById('clearMeasuresBtn');
+
+// NOVO: Variáveis de estado para as réguas de medição
+let measurementMode = null; // Pode ser 'horizontal', 'vertical' ou null
+let activeDrag = null; // Guarda qual régua está sendo arrastada
+const rulers = {
+    horizontal: { active: false, startX: 0, startY: 0, endX: 0 },
+    vertical: { active: false, startX: 0, startY: 0, endY: 0 }
+};
+
+
 
 function draw() {
     // Guarda de segurança: não tenta desenhar se os objetos principais não estiverem prontos
@@ -44,6 +58,7 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
     drawGround();
+    drawRulers();
     drawTrajectory();
     drawCannon();
     drawTarget();
@@ -54,6 +69,66 @@ function draw() {
     drawVelocityData();
     drawUI();
 }
+
+// NOVO: Função para desenhar as réguas na tela
+function drawRulers() {
+    ctx.strokeStyle = '#dc3545'; // Vermelho para a régua
+    ctx.fillStyle = '#dc3545';
+    ctx.font = 'bold 14px Arial';
+    ctx.lineWidth = 2;
+
+    // Desenha a régua horizontal se estiver ativa
+    if (rulers.horizontal.active) {
+        const h = rulers.horizontal;
+        const y = h.startY;
+        // Linha principal
+        ctx.beginPath();
+        ctx.moveTo(h.startX, y);
+        ctx.lineTo(h.endX, y);
+        ctx.stroke();
+        // Ticks no início e fim
+        ctx.beginPath();
+        ctx.moveTo(h.startX, y - 5);
+        ctx.lineTo(h.startX, y + 5);
+        ctx.moveTo(h.endX, y - 5);
+        ctx.lineTo(h.endX, y + 5);
+        ctx.stroke();
+        // Texto da medida
+        const distance = Math.abs(h.endX - h.startX) / PIXELS_PER_METER;
+        const text = `${distance.toFixed(1)} m`;
+        const textX = (h.startX + h.endX) / 2;
+        ctx.fillText(text, textX, y - 10);
+    }
+
+    // Desenha a régua vertical se estiver ativa
+    if (rulers.vertical.active) {
+        const v = rulers.vertical;
+        const x = v.startX;
+        // Linha principal
+        ctx.beginPath();
+        ctx.moveTo(x, v.startY);
+        ctx.lineTo(x, v.endY);
+        ctx.stroke();
+        // Ticks no início e fim
+        ctx.beginPath();
+        ctx.moveTo(x - 5, v.startY);
+        ctx.lineTo(x + 5, v.startY);
+        ctx.moveTo(x - 5, v.endY);
+        ctx.lineTo(x + 5, v.endY);
+        ctx.stroke();
+        // Texto da medida
+        const distance = Math.abs(v.endY - v.startY) / PIXELS_PER_METER;
+        const text = `${distance.toFixed(1)} m`;
+        const textY = (v.startY + v.endY) / 2;
+        ctx.save();
+        ctx.translate(x + 10, textY);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+    }
+}
+
 function drawBackground() {
     const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
     sky.addColorStop(0, '#87CEEB');
@@ -339,9 +414,57 @@ function resetGame() {
     targetCoordsDisplay.textContent = `x: ${targetX_meters.toFixed(1)}m, y: ${targetY_meters.toFixed(1)}m`;
 
     projectileCoordsDisplay.textContent = 'Parado';
-
+    clearRulers();
     // Desenha o estado inicial completo
     draw();
+}
+
+function clearRulers() {
+    rulers.horizontal.active = false;
+    rulers.vertical.active = false;
+}
+// mouse evento
+function getMousePos(canvas, evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
+
+
+function handleMouseDown(e) {
+    if (!measurementMode) return;
+    const pos = getMousePos(canvas, e);
+
+    if (measurementMode === 'horizontal') {
+        rulers.horizontal.active = true;
+        rulers.horizontal.startX = pos.x;
+        rulers.horizontal.startY = pos.y;
+        rulers.horizontal.endX = pos.x;
+        activeDrag = 'horizontal';
+    } else if (measurementMode === 'vertical') {
+        rulers.vertical.active = true;
+        rulers.vertical.startX = pos.x;
+        rulers.vertical.startY = pos.y;
+        rulers.vertical.endY = pos.y;
+        activeDrag = 'vertical';
+    }
+    measurementMode = null; // Desativa o modo para o próximo clique
+}
+
+function handleMouseMove(e) {
+    if (!activeDrag) return;
+    const pos = getMousePos(canvas, e);
+    if (activeDrag === 'horizontal') {
+        rulers.horizontal.endX = pos.x;
+    } else if (activeDrag === 'vertical') {
+        rulers.vertical.endY = pos.y;
+    }
+}
+
+function handleMouseUp() {
+    activeDrag = null;
 }
 
 // --- GAME LOOP ---
@@ -363,6 +486,16 @@ function gameLoop(timestamp) {
 fireButton.addEventListener('click', fireShot);
 resetButton.addEventListener('click', resetGame);
 angleSlider.addEventListener('input', updateAngle);
+
+// NOVO: Listeners dos botões e do mouse
+measureHorizontalBtn.addEventListener('click', () => { measurementMode = 'horizontal'; });
+measureVerticalBtn.addEventListener('click', () => { measurementMode = 'vertical'; });
+clearMeasuresBtn.addEventListener('click', clearRulers);
+canvas.addEventListener('mousedown', handleMouseDown);
+canvas.addEventListener('mousemove', handleMouseMove);
+canvas.addEventListener('mouseup', handleMouseUp);
+
+
 
 // Inicia o jogo
 resetGame();

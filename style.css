@@ -117,3 +117,44 @@ button {
     color: #555; /* Cor do texto da unidade */
     font-size: 0.9em;
 }
+
+/* Adicione no final de style.css */
+
+.measure-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+}
+
+.measure-group p {
+    margin: 0;
+    font-weight: bold;
+    text-align: center;
+}
+
+.measure-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.measure-buttons button {
+    flex-grow: 1;
+    background-color: #6c757d; /* Cinza */
+    font-size: 12px;
+    padding: 8px;
+}
+
+.measure-buttons button:hover {
+    background-color: #5a6268;
+}
+
+#clearMeasuresBtn {
+    background-color: #ffc107; /* Amarelo */
+    color: #212529;
+}
+
+#clearMeasuresBtn:hover {
+    background-color: #e0a800;
+}
