@@ -168,8 +168,8 @@ function drawVelocityData() {
 
     for (const dataPoint of velocityDataPoints) {
         // Cria strings de texto separadas
-        const textVx = `vₓ: ${dataPoint.vx.toFixed(1)}`;
-        const textVy = `vᵧ: ${dataPoint.vy.toFixed(1)}`;
+        const textVx = `vₓ: ${dataPoint.vx.toFixed(1)} m/s`;
+        const textVy = `vᵧ: ${dataPoint.vy.toFixed(1)} m/s`;
 
         // Define a posição Y para a primeira linha (vx)
         const yPosVx = dataPoint.y - 22; // Um pouco mais para cima para dar espaço
