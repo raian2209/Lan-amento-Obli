@@ -161,7 +161,7 @@ function drawUI() {
 
 // SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
 function drawVelocityData() {
-    ctx.font = '12px Arial';
+    ctx.font = 'bold 12px Arial';
      // Cor escura para boa legibilidade
     ctx.textAlign = 'left';
     const lineHeight = 14; // Define o espaçamento vertical entre as linhas de texto
