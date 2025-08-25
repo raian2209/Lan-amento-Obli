@@ -58,7 +58,6 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBackground();
     drawGround();
-    drawRulers();
     drawTrajectory();
     drawCannon();
     drawTarget();
@@ -67,6 +66,8 @@ function draw() {
     }
     drawVelocityComponentVectors();
     drawVelocityData();
+    drawRulers();
+
     drawUI();
 }
 
