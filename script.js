@@ -162,7 +162,7 @@ function drawUI() {
 // SUBSTITUA A FUNÇÃO ANTIGA POR ESTA
 function drawVelocityData() {
     ctx.font = '12px Arial';
-    ctx.fillStyle = '#333333'; // Cor escura para boa legibilidade
+     // Cor escura para boa legibilidade
     ctx.textAlign = 'left';
     const lineHeight = 14; // Define o espaçamento vertical entre as linhas de texto
 
@@ -174,10 +174,13 @@ function drawVelocityData() {
         // Define a posição Y para a primeira linha (vx)
         const yPosVx = dataPoint.y - 22; // Um pouco mais para cima para dar espaço
 
-        
+        ctx.fillStyle = 'blue';
         
         // 1. Desenha o texto de vx
         ctx.fillText(textVx, dataPoint.x, yPosVx + lineHeight);
+
+
+        ctx.fillStyle = 'green';
 
         // 2. Desenha o texto de vy, abaixo da primeira linha
         ctx.fillText(textVy, dataPoint.x, yPosVx);
