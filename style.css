@@ -158,3 +158,8 @@ button {
 #clearMeasuresBtn:hover {
     background-color: #e0a800;
 }
+
+.footer {
+    text-align: center;
+    padding: 12px 0;
+}
