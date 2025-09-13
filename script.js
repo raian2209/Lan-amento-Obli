@@ -31,6 +31,9 @@ const PLOT_INTERVAL = 0.4;
 let timeSinceLastPlot = 0;
 let velocityDataPoints = [];
 
+// Carregamento de Imagens
+const cannonImage = new Image();
+cannonImage.src = 'labLançamentoObli.png';
 // --- FUNÇÕES DE DESENHO ---
 
 // ADICIONE A LINHA ABAIXO
@@ -146,23 +149,59 @@ function drawGround() {
     }
 }
 function drawCannon() {
-    ctx.save();
-    ctx.translate(cannon.x, cannon.y);
+    // ctx.save();
+    // ctx.translate(cannon.x, cannon.y);
+    // ctx.rotate(-cannon.angle);
+    // ctx.fillStyle = '#555';
+    // ctx.fillRect(0, -10, 80, 20);
+    // ctx.fillStyle = '#333';
+    // ctx.fillRect(75, -12, 15, 24);
+    // ctx.restore();
+    // ctx.fillStyle = '#666';
+    // ctx.beginPath();
+    // ctx.arc(cannon.x, cannon.y + 15, 30, Math.PI, 2 * Math.PI);
+    // ctx.fill();
+    // ctx.fillStyle = '#444';
+    // ctx.beginPath();
+    // ctx.arc(cannon.x - 20, cannon.y + 35, 15, 0, 2 * Math.PI);
+    // ctx.arc(cannon.x + 20, cannon.y + 35, 15, 0, 2 * Math.PI);
+    // ctx.fill();
+
+// A imagem pode não ter carregado no primeiro frame.
+    // Este 'if' evita erros e desenha um quadrado cinza como substituto temporário.
+    if (!cannonImage.complete || cannonImage.naturalHeight === 0) {
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(cannon.x - 40, cannon.y - 15, 80, 50)
+        return;
+    }
+ // --- 1. Desenhar a base do canhão (a imagem, sem rotação) ---
+    const imgWidth = 100;
+    const imgHeight = 80;
+    const baseX = cannon.x - (imgWidth / 2);
+    // Ajustei o baseY para que o canhão fique bem assentado no chão
+    const baseY = cannon.y - imgHeight + 15; 
+    ctx.drawImage(cannonImage, baseX, baseY, imgWidth, imgHeight);
+
+    // --- 2. Desenhar o cano rotativo na frente do homem ---
+    
+    // Ponto de pivô: de onde o cano vai sair.
+    // cannon.x + 25 -> move 25 pixels para a frente
+    // cannon.y - 25 -> move 25 pixels para cima
+    const pivotX = cannon.x + 25;
+    const pivotY = cannon.y - 25;
+
+    ctx.save(); 
+    // Move a origem do desenho para o novo ponto de pivô
+    ctx.translate(pivotX, pivotY); 
     ctx.rotate(-cannon.angle);
+
+    // Desenha o cano a partir da nova origem (0,0 relativo ao pivô)
     ctx.fillStyle = '#555';
-    ctx.fillRect(0, -10, 80, 20);
+    ctx.fillRect(0, -10, 50, 20); // O cano tem 50px de comprimento
     ctx.fillStyle = '#333';
-    ctx.fillRect(75, -12, 15, 24);
+    ctx.fillRect(45, -12, 15, 24);
+
     ctx.restore();
-    ctx.fillStyle = '#666';
-    ctx.beginPath();
-    ctx.arc(cannon.x, cannon.y + 15, 30, Math.PI, 2 * Math.PI);
-    ctx.fill();
-    ctx.fillStyle = '#444';
-    ctx.beginPath();
-    ctx.arc(cannon.x - 20, cannon.y + 35, 15, 0, 2 * Math.PI);
-    ctx.arc(cannon.x + 20, cannon.y + 35, 15, 0, 2 * Math.PI);
-    ctx.fill();
 }
 function drawTarget() {
     ctx.fillStyle = 'white';
@@ -365,13 +404,14 @@ function fireShot() {
         alert('Por favor, insira uma velocidade inicial válida.');
         return;
     }
+    const barrelLength = 80;
     trajectoryPath = [];
     velocityDataPoints = [];
     timeSinceLastPlot = 0;
     projectileCoordsDisplay.textContent = 'Em voo...';
     projectile = {
-        x: cannon.x + 80 * Math.cos(cannon.angle),
-        y: cannon.y - 80 * Math.sin(cannon.angle),
+        x: cannon.x + barrelLength * Math.cos(cannon.angle),
+        y: cannon.y - barrelLength * Math.sin(cannon.angle),
         vx: velocity * Math.cos(cannon.angle),
         vy: -velocity * Math.sin(cannon.angle)
     };
